@@ -59,6 +59,8 @@ On mainnet the factory is `lockup.near`, so the lockup account is
 
 **Never display these stale values as if they were reality.** Always compute totals from on-chain balance + actual staking pool balance (`get_account` on the pool).
 
+There is a second, independent stale-cache in the same contract: `TransfersInformation`. When it's still `TransfersDisabled { transfer_poll_account_id }` (most lockups created before the Oct-2020 global-transfers poll resolved), `get_locked_amount()` falls through to the default branch and returns `lockup_amount − termination_withdrawn_tokens` — i.e., the entire original grant — because its release-schedule math requires a non-zero `transfers_timestamp` that only gets set once the poll result is checked. This is why end2.near's `get_locked_amount()` reports 1,050 NEAR even though end2 has long since vested: the contract literally hasn't learned yet that transfers were enabled. A single owner call to `check_transfers_vote` (75 TGas) queries the poll contract, stores the `transfers_timestamp`, and from then on `get_locked_amount()` returns the correctly-computed value (typically 0 for any lockup old enough to have released).
+
 ### 2.4 Staking delegation through the lockup
 
 All staking ops are called on the **lockup contract**, not the pool. The lockup re-dispatches to the pool via cross-contract calls and updates its own `StakingInformation.deposit_amount` via callbacks. Key methods and gas budgets:
@@ -102,7 +104,7 @@ Translation:
 1. **Transfers enabled** — `are_transfers_enabled() == true`. Note: transfers were enabled **globally** on NEAR mainnet in October 2020 and cannot be disabled again. Any lockup contract that still reports `are_transfers_enabled() == false` simply has the stale cached `TransfersInformation::TransfersDisabled { transfer_poll_account_id }` from before the poll resolved. The owner syncs it with a single `check_transfers_vote()` call (75 TGas); the contract queries the transfer-poll contract, and the callback updates the cached state to `TransfersEnabled`. The UI surfaces this inline: any prerequisite/guard that requires transfers offers a "Call check_transfers_vote" button instead of implying the user must wait.
 2. **Staking pool idle** — if one is selected, its `status` must be `Idle` (no in-flight operation). There is no public view method for this — the only way to observe it client-side is indirectly (any pool-dispatching call will fail with `"Contract is currently busy..."`).
 3. **No termination** — `get_termination_status() == null`.
-4. **Fully vested/released** — `get_locked_amount() == 0`.
+4. **Fully vested/released** — `get_locked_amount() == 0`. **Important:** `get_locked_amount()` depends on `TransfersInformation` too. Its computation only uses the release/vesting schedule when `TransfersInformation == TransfersEnabled { transfers_timestamp }`; otherwise (still stale-`Disabled`) it hits the fallback at the bottom of the getter and returns the **entire original `lockup_amount`** minus any `termination_withdrawn_tokens`, because the release clock can't start without a `transfers_timestamp`. This means any stale-`Disabled` lockup whose release period has long since elapsed will *appear* to have a huge locked balance until the owner calls `check_transfers_vote`. The UI detects this condition (`are_transfers_enabled == false && lockedVesting > 0`) and labels the "Locked (not yet vested)" figure as `(stale)`, with a prominent callout recommending the sync call. A single `check_transfers_vote` typically unblocks both the "transfers enabled" prereq *and* the "no locked tokens" prereq in one shot.
 
 The app also enforces two **practical** prerequisites not required by the contract but required for safety:
 
@@ -124,18 +126,37 @@ Implemented once in `src/hooks/useLockupBreakdown.ts`. Pulls:
 - `get_staking_pool_account_id()` via `useLockupStakingPool`.
 - `get_account(lockupAccountId)` **on the staking pool** via `useStakingPoolAccount` → `staked_balance`, `unstaked_balance`, `can_withdraw`.
 
-Computes the 4-category breakdown plus total:
+Computes the 4-category breakdown plus total. **Invariant:**
+`total == lockedVesting + lockedStorage + availableNow + afterUnstake`.
+
+The key insight is that `lockedVesting` (`get_locked_amount()`) and
+`lockedStorage` (3.5 NEAR) are *logical* slices describing tokens whose use is
+restricted regardless of physical location, while `afterUnstake` is a
+*physical* slice (tokens that sit at the pool needing unstake + wait). An
+earlier version of this code subtracted all three from `total` independently
+and it double-counted: for an account with locked vesting tokens that are
+also staked at the pool (e.g. `end2.near`), the same NEAR shows up in both
+buckets. The correct algorithm takes the logical slices off the top first,
+then splits the remainder by physical access:
 
 ```
 total            = on_chain + pool_staked + pool_unstaked
-pool_unstaked_pending = can_withdraw ? 0 : pool_unstaked
-afterUnstake     = pool_staked + pool_unstaked_pending
-availableNow     = max(0, total − locked − 3.5 NEAR − afterUnstake)
+lockedVesting    = min(get_locked_amount(), total − 3.5 NEAR)       // safety clamp
+lockedStorage    = 3.5 NEAR
+spendableTotal   = max(0, total − lockedVesting − 3.5 NEAR)
 
-total == locked + 3.5 NEAR + availableNow + afterUnstake   (invariant)
+// Tokens physically accessible without waiting (on-chain + withdrawable unstaked at pool)
+withdrawablePoolUnstaked = can_withdraw ? pool_unstaked : 0
+accessibleNow            = on_chain + withdrawablePoolUnstaked
+accessibleAfterStorage   = max(0, accessibleNow − 3.5 NEAR)
+
+availableNow     = min(spendableTotal, accessibleAfterStorage)
+afterUnstake     = spendableTotal − availableNow
 ```
 
 The "Locked for smart contract" row is literally the 3.5 NEAR constant; it is only reclaimable by deleting the lockup. The "available after unstake" row is hidden when zero.
+
+When adding a test account, always verify the invariant holds by querying mainnet RPC: compute total from `view_account` + `get_account` on the pool, then confirm that `lockedVesting + 3.5 + availableNow + afterUnstake` sums to the exact same yoctoNEAR value.
 
 Consumers: `LockupInfo.tsx`, `TransferForm.tsx`, `StakingManagement.tsx` (max-stakeable), `RemoveLockup.tsx` (prereq checklist).
 

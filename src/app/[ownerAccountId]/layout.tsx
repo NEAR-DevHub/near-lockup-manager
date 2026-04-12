@@ -6,7 +6,11 @@ export async function generateMetadata({
   params: Promise<{ ownerAccountId: string }>;
 }): Promise<Metadata> {
   const { ownerAccountId } = await params;
-  const title = `${ownerAccountId} — NEAR Lockup Manager`;
+  // The root layout sets a `%s — NEAR Lockup Manager` template; pass just the
+  // account id so the composed page title becomes
+  // "end2.near — NEAR Lockup Manager" (not doubly-suffixed).
+  const title = ownerAccountId;
+  const fullTitle = `${ownerAccountId} — NEAR Lockup Manager`;
   const description = `View and manage the NEAR lockup contract owned by ${ownerAccountId}: balances, staking delegation, withdrawal, and lockup removal.`;
   const canonical = `/${encodeURIComponent(ownerAccountId)}`;
 
@@ -15,13 +19,13 @@ export async function generateMetadata({
     description,
     alternates: { canonical },
     openGraph: {
-      title,
+      title: fullTitle,
       description,
       url: canonical,
       type: "website",
     },
     twitter: {
-      title,
+      title: fullTitle,
       description,
       card: "summary_large_image",
     },
