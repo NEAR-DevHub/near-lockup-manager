@@ -205,7 +205,7 @@ export function TransferForm({
                   </p>
                 )}
                 {refreshPool.isSuccess && (
-                  <p className="text-xs text-emerald-600">
+                  <p className="text-xs text-emerald-600 dark:text-emerald-300">
                     Refreshed. Cached liquid balance is being reloaded...
                   </p>
                 )}

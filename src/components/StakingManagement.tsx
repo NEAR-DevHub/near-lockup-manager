@@ -205,8 +205,8 @@ function StakingDashboard({
                   <Badge
                     className={
                       canWithdraw
-                        ? "bg-blue-500/15 text-blue-700 border-blue-500/20 text-[10px] px-1.5 py-0"
-                        : "bg-amber-500/15 text-amber-700 border-amber-500/20 text-[10px] px-1.5 py-0"
+                        ? "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/20 text-[10px] px-1.5 py-0"
+                        : "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/20 text-[10px] px-1.5 py-0"
                     }
                   >
                     {canWithdraw ? "Withdraw ready" : "Pending"}
@@ -460,7 +460,7 @@ function WithdrawSection({
           {canWithdraw ? formatNearAmount(unstakedYocto) : "0"} NEAR
         </p>
         {hasUnstaked && !canWithdraw && (
-          <p className="text-xs text-amber-600 mt-1">
+          <p className="text-xs text-amber-600 dark:text-amber-300 mt-1">
             {formatNearAmount(unstakedYocto)} NEAR unstaked but not yet
             available (~48h wait)
           </p>

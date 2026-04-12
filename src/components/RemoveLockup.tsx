@@ -179,7 +179,7 @@ function PrereqRow({ prereq }: { prereq: Prereq }) {
           <Skeleton className="h-4 w-4 rounded-full" />
         )}
         {prereq.status === "ok" && (
-          <div className="h-4 w-4 rounded-full bg-emerald-500/15 text-emerald-700 flex items-center justify-center">
+          <div className="h-4 w-4 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 flex items-center justify-center">
             <Check className="h-3 w-3" />
           </div>
         )}
@@ -533,8 +533,8 @@ export function RemoveLockup({
         {/* Done */}
         {step === "done" && (
           <Alert className="bg-emerald-500/10 border-emerald-500/20">
-            <Check className="h-4 w-4 text-emerald-600" />
-            <AlertDescription className="text-emerald-700">
+            <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
+            <AlertDescription className="text-emerald-700 dark:text-emerald-300">
               Lockup account deleted successfully. All remaining NEAR has been
               sent to{" "}
               <span className="font-mono text-xs">{ownerAccountId}</span>.
@@ -579,14 +579,14 @@ function StepIndicator({
 
   if (currentIdx > targetIdx) {
     return (
-      <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-500/20 text-[10px] px-1.5 py-0 shrink-0">
+      <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/20 text-[10px] px-1.5 py-0 shrink-0">
         Done
       </Badge>
     );
   }
   if (currentIdx >= firstTargetIdx && currentIdx <= targetIdx) {
     return (
-      <Badge className="bg-blue-500/15 text-blue-700 border-blue-500/20 text-[10px] px-1.5 py-0 shrink-0">
+      <Badge className="bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/20 text-[10px] px-1.5 py-0 shrink-0">
         Current
       </Badge>
     );

@@ -56,14 +56,14 @@ function BalanceRow({
             bold
               ? "font-mono text-sm tabular-nums font-semibold"
               : "font-mono text-sm tabular-nums font-medium",
-            stale ? "text-amber-700" : "",
+            stale ? "text-amber-700 dark:text-amber-300" : "",
           ]
             .filter(Boolean)
             .join(" ")}
         >
           {value ? formatNearAmount(value) : "—"} NEAR
           {stale && (
-            <span className="ml-1 text-xs font-normal text-amber-700">
+            <span className="ml-1 text-xs font-normal text-amber-700 dark:text-amber-300">
               (stale)
             </span>
           )}
@@ -125,8 +125,8 @@ export function LockupInfo({
               <Badge
                 className={
                   transfers.data.result
-                    ? "bg-emerald-500/15 text-emerald-700 border-emerald-500/20"
-                    : "bg-amber-500/15 text-amber-700 border-amber-500/20"
+                    ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/20"
+                    : "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/20"
                 }
               >
                 Transfers {transfers.data.result ? "enabled" : "disabled"}

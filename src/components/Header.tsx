@@ -8,6 +8,7 @@ import {
 } from "react-near-ts";
 import { Button } from "@/components/ui/button";
 import { NearIcon } from "@/components/NearIcon";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 function truncateAccountId(id: string, maxLen = 24) {
   if (id.length <= maxLen) return id;
@@ -43,6 +44,7 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           {account.isConnectedAccount ? (
             <>
               <Link

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { ThemeProvider } from "next-themes";
 import {
   createNearConnectorService,
   createNearStore,
@@ -15,5 +16,14 @@ const nearStore = createNearStore({
 });
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  return <NearProvider nearStore={nearStore}>{children}</NearProvider>;
+  return (
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+    >
+      <NearProvider nearStore={nearStore}>{children}</NearProvider>
+    </ThemeProvider>
+  );
 }
